@@ -3,160 +3,196 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Offline KI Chatbot 🤖</title>
-  <link rel="icon" href="robot-icon.png" type="image/png" />
+  <title>Chatbot KI</title>
+  <link rel="icon" type="image/png" href="robot-icon.png">
+  <link rel="apple-touch-icon" href="robot-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#121212">
   <style>
+    :root {
+      --bg: #121212;
+      --fg: #eee;
+      --accent: #3a86ff;
+      --bot-bg: #2a2a2a;
+      --user-bg: #3a86ff;
+    }
     body {
+      font-family: "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--fg);
       margin: 0;
-      font-family: "Segoe UI", Tahoma, sans-serif;
-      background: #121212;
-      color: #eee;
       display: flex;
       flex-direction: column;
       height: 100vh;
     }
     header {
-      background: #1f1f1f;
-      color: white;
-      text-align: center;
+      display: flex;
+      align-items: center;
+      gap: 10px;
       padding: 1rem;
+      background: #1f1f1f;
       font-size: 1.4rem;
       font-weight: bold;
-      display: flex;
-      justify-content: center;
-      align-items: center;
       border-bottom: 1px solid #333;
     }
     header img {
       width: 32px;
       height: 32px;
-      margin-right: 10px;
     }
     #chat {
       flex: 1;
-      overflow-y: auto;
       padding: 1rem;
+      overflow-y: auto;
       display: flex;
       flex-direction: column;
       background: #181818;
     }
     .message {
-      max-width: 80%;
-      padding: 0.7rem 1rem;
-      border-radius: 16px;
+      max-width: 75%;
       margin-bottom: 1rem;
+      padding: 0.7rem 1rem;
+      border-radius: 15px;
       white-space: pre-wrap;
       line-height: 1.4;
     }
-    .user {
-      background: #3a86ff;
-      color: white;
-      align-self: flex-end;
-    }
-    .bot {
-      background: #2a2a2a;
-      color: #ccc;
-      align-self: flex-start;
-    }
+    .user { align-self: flex-end; background: var(--user-bg); color: white; }
+    .bot  { align-self: flex-start; background: var(--bot-bg); color: #ccc; }
     form {
       display: flex;
-      padding: 0.6rem;
-      background: #1f1f1f;
+      padding: 0.5rem;
       border-top: 1px solid #333;
+      background: #1f1f1f;
     }
-    input[type="text"] {
+    input {
       flex: 1;
-      padding: 0.6rem 1rem;
+      padding: 0.7rem 1rem;
       border: none;
       border-radius: 20px;
+      font-size: 1rem;
       background: #333;
       color: #eee;
-      font-size: 1rem;
       outline: none;
     }
     button {
       margin-left: 0.5rem;
-      padding: 0 1.5rem;
-      background: #3a86ff;
-      border: none;
-      border-radius: 20px;
+      background: var(--accent);
       color: white;
+      border: none;
       font-weight: bold;
+      border-radius: 20px;
+      padding: 0 1.5rem;
       cursor: pointer;
-      transition: background 0.3s;
     }
     button:hover {
       background: #265dcc;
+    }
+    #toggleTheme {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: transparent;
+      border: none;
+      color: var(--fg);
+      font-size: 1.2rem;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
 
 <header>
-  <img src="robot-icon.png" alt="Bot Icon">
-  Schlauer KI Chatbot (Offline)
+  <img src="robot-icon.png" alt="Icon" />
+  Schlauer KI Chatbot 🤖
+  <button id="toggleTheme">🌙</button>
 </header>
 
 <div id="chat"></div>
 
 <form id="form">
-  <input type="text" id="input" placeholder="Frag mich irgendwas..." autocomplete="off" required />
-  <button type="submit">Senden</button>
+  <input id="input" type="text" autocomplete="off" placeholder="Frag mich etwas..." required />
+  <button type="submit">➤</button>
 </form>
 
 <script>
-  const chat = document.getElementById('chat');
-  const form = document.getElementById('form');
-  const input = document.getElementById('input');
+  const chat = document.getElementById("chat");
+  const form = document.getElementById("form");
+  const input = document.getElementById("input");
+  const toggleTheme = document.getElementById("toggleTheme");
 
-  const conversation = [];
-  const greetings = [
-    "Hallo! Ich bin dein smarter Offline-Chatbot 🤖",
-    "Frag mich was – ich bin bereit!",
-    "Ich kann dir zwar nichts ECHTES sagen... aber tu so als ob 😄"
-  ];
-  addMessage(random(greetings), "bot");
-
-  const dummyAnswers = [
-    "Das ist eine interessante Frage!",
-    "Ich denke, das hängt von vielen Faktoren ab.",
-    "Gute Frage! Ich muss kurz darüber nachdenken...",
-    "Dazu habe ich leider keine Informationen 🧠.",
-    "Das könntest du selbst herausfinden – ich glaube an dich!",
-    "Ich bin mir nicht sicher, aber vielleicht hilft dir eine Suche im Internet 😉.",
-    "Ja, das ergibt Sinn!",
-    "Wow, das wusste ich nicht – danke!",
-    "Du stellst echt clevere Fragen!"
-  ];
-
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const userText = input.value.trim();
-    if (!userText) return;
-
-    addMessage(userText, "user");
-    input.value = "";
-    input.disabled = true;
-
-    setTimeout(() => {
-      const botReply = random(dummyAnswers);
-      addMessage(botReply, "bot");
-      input.disabled = false;
-      input.focus();
-    }, 600);
-  });
+  // Begrüßung und Verlauf
+  const greeting = "Hallo! 🤖 Ich bin dein smarter Chatbot. Stell mir einfach eine Frage!";
+  const localHistoryKey = "chatbotHistory";
 
   function addMessage(text, sender) {
     const div = document.createElement("div");
-    div.classList.add("message", sender);
+    div.className = `message ${sender}`;
     div.textContent = text;
     chat.appendChild(div);
     chat.scrollTop = chat.scrollHeight;
   }
 
-  function random(list) {
-    return list[Math.floor(Math.random() * list.length)];
+  function speak(text) {
+    const msg = new SpeechSynthesisUtterance(text);
+    msg.lang = "de-DE";
+    speechSynthesis.speak(msg);
   }
+
+  function fakeBotAnswer(question) {
+    // Simulierter großer Wortschatz
+    const answers = [
+      "Interessante Frage! 🤔",
+      "Das hängt von vielen Faktoren ab!",
+      "Gute Überlegung – ich denke, ...",
+      "Das kann ich dir erklären! 📚",
+      "Lass uns das gemeinsam herausfinden!",
+      "Hm, ich würde sagen:",
+      "In der Theorie ist das möglich. In der Praxis manchmal kompliziert.",
+      "Sehr kluge Frage. Denk mal drüber nach:",
+      "Das erinnert mich an etwas Ähnliches...",
+      "Ganz genau! Viele sagen dazu auch:",
+    ];
+    const randomIndex = Math.floor(Math.random() * answers.length);
+    return answers[randomIndex] + " " + question;
+  }
+
+  function saveHistory() {
+    localStorage.setItem(localHistoryKey, chat.innerHTML);
+  }
+
+  function loadHistory() {
+    const saved = localStorage.getItem(localHistoryKey);
+    if (saved) chat.innerHTML = saved;
+    else addMessage(greeting, "bot");
+  }
+
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    const userText = input.value.trim();
+    if (!userText) return;
+    addMessage(userText, "user");
+
+    setTimeout(() => {
+      const botText = fakeBotAnswer(userText);
+      addMessage(botText, "bot");
+      speak(botText);
+      saveHistory();
+    }, 600);
+
+    input.value = "";
+  });
+
+  // Dark/Light-Mode Toggle
+  toggleTheme.addEventListener("click", () => {
+    const dark = getComputedStyle(document.documentElement).getPropertyValue('--bg') === '#121212';
+    document.documentElement.style.setProperty('--bg', dark ? '#f4f4f4' : '#121212');
+    document.documentElement.style.setProperty('--fg', dark ? '#000' : '#eee');
+    document.documentElement.style.setProperty('--bot-bg', dark ? '#e0e0e0' : '#2a2a2a');
+    document.documentElement.style.setProperty('--user-bg', dark ? '#007bff' : '#3a86ff');
+    document.body.style.backgroundColor = dark ? '#fff' : '#121212';
+    toggleTheme.textContent = dark ? "🌙" : "☀️";
+  });
+
+  loadHistory();
 </script>
 
 </body>
