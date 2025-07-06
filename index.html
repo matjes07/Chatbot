@@ -80,6 +80,10 @@
       transition: background-color 0.3s;
     }
     button:hover { background: #265dcc; }
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -97,109 +101,143 @@
 </form>
 
 <script>
-const chat = document.getElementById('chat');
-const form = document.getElementById('form');
-const input = document.getElementById('input');
+  const chat = document.getElementById('chat');
+  const form = document.getElementById('form');
+  const input = document.getElementById('input');
+  const button = form.querySelector('button');
 
-let apiKey = localStorage.getItem("openrouter_key");
-if (!apiKey) {
-  apiKey = prompt("🔑 Bitte gib deinen OpenRouter API-Key ein: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");
-  localStorage.setItem("openrouter_key", apiKey);
-}
-
-const conversation = [
-  { role: "system", content: "Du bist ein freundlicher, hilfreicher Chatbot." },
-  { role: "assistant", content: "Hallo! 👋 Ich bin dein KI-Assistent. Was möchtest du wissen oder ausprobieren?" }
-];
-
-function addMessage(text, sender, imageUrl) {
-  const div = document.createElement('div');
-  div.classList.add('message', sender);
-  if (text) div.textContent = text;
-  if (imageUrl) {
-    const img = document.createElement('img');
-    img.src = imageUrl;
-    img.alt = "Bild";
-    div.appendChild(img);
-  }
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
-}
-
-async function sendMessage(messages) {
-  try {
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: "mistralai/mixtral-8x7b-instruct",
-        messages,
-        temperature: 0.7
-      })
-    });
-    const data = await res.json();
-    return data.choices[0].message.content;
-  } catch (e) {
-    return "❌ Fehler: " + e.message;
-  }
-}
-
-async function generateImage(prompt) {
-  try {
-    const res = await fetch("https://openrouter.ai/api/v1/images/generations", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: "openai/dall-e-3",
-        prompt: prompt,
-        n: 1,
-        size: "512x512"
-      })
-    });
-    const data = await res.json();
-    return data.data[0].url;
-  } catch {
-    return null;
-  }
-}
-
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const text = input.value.trim();
-  if (!text) return;
-
-  addMessage(text, "user");
-  input.value = "";
-  input.disabled = true;
-
-  if (text.toLowerCase().startsWith("!bild ")) {
-    const prompt = text.slice(6).trim();
-    addMessage("Generiere Bild...", "bot");
-    const imgUrl = await generateImage(prompt);
-    chat.lastChild.remove();
-    if (imgUrl) {
-      addMessage(`Bild zu: "${prompt}"`, "bot", imgUrl);
+  let apiKey = localStorage.getItem("openrouter_key");
+  if (!apiKey) {
+    apiKey = prompt("🔑 Bitte gib deinen OpenRouter API-Key ein:");
+    if (apiKey) {
+      localStorage.setItem("openrouter_key", apiKey.trim());
     } else {
-      addMessage("Bild konnte nicht generiert werden.", "bot");
+      alert("API-Key wird benötigt, um den Chatbot zu verwenden.");
+      input.disabled = true;
+      button.disabled = true;
     }
-  } else {
-    conversation.push({ role: "user", content: text });
-    addMessage("...", "bot");
-    const reply = await sendMessage(conversation);
-    chat.lastChild.remove();
-    addMessage(reply, "bot");
-    conversation.push({ role: "assistant", content: reply });
   }
 
-  input.disabled = false;
-  input.focus();
-});
+  const conversation = [
+    { role: "system", content: "Du bist ein freundlicher, hilfreicher Chatbot." },
+    { role: "assistant", content: "Hallo! 👋 Ich bin dein KI-Assistent. Was möchtest du wissen oder ausprobieren?" }
+  ];
+
+  function addMessage(text, sender, imageUrl) {
+    const div = document.createElement('div');
+    div.classList.add('message', sender);
+    if (text) div.textContent = text;
+    if (imageUrl) {
+      const img = document.createElement('img');
+      img.src = imageUrl;
+      img.alt = "Bild";
+      div.appendChild(img);
+    }
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  async function sendMessage(messages) {
+    try {
+      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: "mistralai/mixtral-8x7b-instruct",
+          messages,
+          temperature: 0.7
+        })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        const errMsg = errorData?.error?.message || res.statusText || 'Unbekannter Fehler';
+        return `❌ API-Fehler: ${errMsg}`;
+      }
+
+      const data = await res.json();
+
+      if (data.choices && data.choices.length > 0 && data.choices[0].message) {
+        return data.choices[0].message.content;
+      } else if (data.error) {
+        return `❌ API-Fehler: ${data.error.message || JSON.stringify(data.error)}`;
+      } else {
+        return `❌ Unerwartete API-Antwort: ${JSON.stringify(data)}`;
+      }
+    } catch (e) {
+      return "❌ Netzwerkfehler: " + e.message;
+    }
+  }
+
+  async function generateImage(prompt) {
+    try {
+      const res = await fetch("https://openrouter.ai/api/v1/images/generations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: "openai/dall-e-3",
+          prompt: prompt,
+          n: 1,
+          size: "512x512"
+        })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        console.error('Bild-API Fehler:', errorData);
+        return null;
+      }
+
+      const data = await res.json();
+      return data.data?.[0]?.url || null;
+    } catch (e) {
+      console.error('Bild-Generierung Fehler:', e);
+      return null;
+    }
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+
+    addMessage(text, "user");
+    input.value = "";
+    input.disabled = true;
+    button.disabled = true;
+
+    if (text.toLowerCase().startsWith("!bild ")) {
+      const prompt = text.slice(6).trim();
+      addMessage("Generiere Bild...", "bot");
+      const imgUrl = await generateImage(prompt);
+      chat.lastChild.remove();
+      if (imgUrl) {
+        addMessage(`Bild zu: "${prompt}"`, "bot", imgUrl);
+      } else {
+        addMessage("Bild konnte nicht generiert werden.", "bot");
+      }
+    } else {
+      conversation.push({ role: "user", content: text });
+      addMessage("...", "bot");
+      const reply = await sendMessage(conversation);
+      chat.lastChild.remove();
+      addMessage(reply, "bot");
+      conversation.push({ role: "assistant", content: reply });
+    }
+
+    input.disabled = false;
+    button.disabled = false;
+    input.focus();
+  });
+
+  // Begrüßungsnachricht anzeigen
+  addMessage(conversation[1].content, "bot");
 </script>
 
 </body>
