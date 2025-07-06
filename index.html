@@ -3,100 +3,104 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>KI Chatbot</title>
-  <link rel="icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Robot_icon_4.svg/512px-Robot_icon_4.svg.png" type="image/png" />
+  <title>Offline KI Chatbot 🤖</title>
+  <link rel="icon" href="robot-icon.png" type="image/png" />
   <style>
     body {
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, sans-serif;
       background: #121212;
       color: #eee;
       display: flex;
       flex-direction: column;
       height: 100vh;
-      margin: 0;
     }
     header {
-      padding: 1rem;
       background: #1f1f1f;
+      color: white;
       text-align: center;
+      padding: 1rem;
+      font-size: 1.4rem;
       font-weight: bold;
-      font-size: 1.5rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       border-bottom: 1px solid #333;
     }
     header img {
-      height: 24px;
-      vertical-align: middle;
-      margin-right: 0.5rem;
+      width: 32px;
+      height: 32px;
+      margin-right: 10px;
     }
     #chat {
       flex: 1;
       overflow-y: auto;
       padding: 1rem;
-      background: #181818;
       display: flex;
       flex-direction: column;
+      background: #181818;
     }
     .message {
-      margin-bottom: 1rem;
       max-width: 80%;
-      padding: 0.6rem 1rem;
-      border-radius: 15px;
-      line-height: 1.4;
+      padding: 0.7rem 1rem;
+      border-radius: 16px;
+      margin-bottom: 1rem;
       white-space: pre-wrap;
+      line-height: 1.4;
     }
-    .user { background: #3a86ff; align-self: flex-end; color: white; }
-    .bot { background: #2a2a2a; align-self: flex-start; color: #ccc; }
-    .bot img {
-      margin-top: 0.5rem;
-      max-width: 300px;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(58, 134, 255, 0.6);
+    .user {
+      background: #3a86ff;
+      color: white;
+      align-self: flex-end;
+    }
+    .bot {
+      background: #2a2a2a;
+      color: #ccc;
+      align-self: flex-start;
     }
     form {
       display: flex;
-      border-top: 1px solid #333;
+      padding: 0.6rem;
       background: #1f1f1f;
-      padding: 0.5rem;
+      border-top: 1px solid #333;
     }
     input[type="text"] {
       flex: 1;
-      padding: 0.5rem 1rem;
+      padding: 0.6rem 1rem;
       border: none;
       border-radius: 20px;
-      font-size: 1rem;
-      outline: none;
       background: #333;
       color: #eee;
+      font-size: 1rem;
+      outline: none;
     }
     button {
       margin-left: 0.5rem;
+      padding: 0 1.5rem;
       background: #3a86ff;
       border: none;
+      border-radius: 20px;
       color: white;
       font-weight: bold;
-      padding: 0 1.5rem;
-      border-radius: 20px;
       cursor: pointer;
-      transition: background-color 0.3s;
+      transition: background 0.3s;
     }
-    button:hover { background: #265dcc; }
-    button:disabled {
-      background: #555;
-      cursor: not-allowed;
+    button:hover {
+      background: #265dcc;
     }
   </style>
 </head>
 <body>
 
 <header>
-  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Robot_icon_4.svg/512px-Robot_icon_4.svg.png" alt="Icon" />
-  KI Chatbot (OpenRouter)
+  <img src="robot-icon.png" alt="Bot Icon">
+  Schlauer KI Chatbot (Offline)
 </header>
 
 <div id="chat"></div>
 
 <form id="form">
-  <input type="text" id="input" autocomplete="off" placeholder="Schreib etwas oder !bild Katze..." required />
+  <input type="text" id="input" placeholder="Frag mich irgendwas..." autocomplete="off" required />
   <button type="submit">Senden</button>
 </form>
 
@@ -104,135 +108,55 @@
   const chat = document.getElementById('chat');
   const form = document.getElementById('form');
   const input = document.getElementById('input');
-  const button = form.querySelector('button');
 
-  let apiKey = localStorage.getItem("openrouter_key");
-  if (!apiKey) {
-    apiKey = prompt("🔑 Bitte gib deinen OpenRouter API-Key ein:");
-    if (apiKey) {
-      localStorage.setItem("openrouter_key", apiKey.trim());
-    } else {
-      alert("API-Key wird benötigt, um den Chatbot zu verwenden.");
-      input.disabled = true;
-      button.disabled = true;
-    }
-  }
+  const conversation = [];
+  const greetings = [
+    "Hallo! Ich bin dein smarter Offline-Chatbot 🤖",
+    "Frag mich was – ich bin bereit!",
+    "Ich kann dir zwar nichts ECHTES sagen... aber tu so als ob 😄"
+  ];
+  addMessage(random(greetings), "bot");
 
-  const conversation = [
-    { role: "system", content: "Du bist ein freundlicher, hilfreicher Chatbot." },
-    { role: "assistant", content: "Hallo! 👋 Ich bin dein KI-Assistent. Was möchtest du wissen oder ausprobieren?" }
+  const dummyAnswers = [
+    "Das ist eine interessante Frage!",
+    "Ich denke, das hängt von vielen Faktoren ab.",
+    "Gute Frage! Ich muss kurz darüber nachdenken...",
+    "Dazu habe ich leider keine Informationen 🧠.",
+    "Das könntest du selbst herausfinden – ich glaube an dich!",
+    "Ich bin mir nicht sicher, aber vielleicht hilft dir eine Suche im Internet 😉.",
+    "Ja, das ergibt Sinn!",
+    "Wow, das wusste ich nicht – danke!",
+    "Du stellst echt clevere Fragen!"
   ];
 
-  function addMessage(text, sender, imageUrl) {
-    const div = document.createElement('div');
-    div.classList.add('message', sender);
-    if (text) div.textContent = text;
-    if (imageUrl) {
-      const img = document.createElement('img');
-      img.src = imageUrl;
-      img.alt = "Bild";
-      div.appendChild(img);
-    }
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const userText = input.value.trim();
+    if (!userText) return;
+
+    addMessage(userText, "user");
+    input.value = "";
+    input.disabled = true;
+
+    setTimeout(() => {
+      const botReply = random(dummyAnswers);
+      addMessage(botReply, "bot");
+      input.disabled = false;
+      input.focus();
+    }, 600);
+  });
+
+  function addMessage(text, sender) {
+    const div = document.createElement("div");
+    div.classList.add("message", sender);
+    div.textContent = text;
     chat.appendChild(div);
     chat.scrollTop = chat.scrollHeight;
   }
 
-  async function sendMessage(messages) {
-  try {
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: "mistralai/mixtral-8x7b-instruct",  // oder ein anderes OpenRouter-Modell
-        messages,
-        temperature: 0.7
-      })
-    });
-
-    const data = await res.json();
-
-    // Fehler auslesen, falls vorhanden
-    if (!data || !data.choices || !data.choices[0]) {
-      if (data.error) {
-        return `❌ Fehler: ${data.error.message || JSON.stringify(data.error)}`;
-      }
-      return "❌ Fehler: Keine gültige Antwort erhalten.";
-    }
-
-    return data.choices[0].message.content;
-  } catch (e) {
-    return "❌ Netzwerkfehler: " + e.message;
+  function random(list) {
+    return list[Math.floor(Math.random() * list.length)];
   }
-}
-  async function generateImage(prompt) {
-    try {
-      const res = await fetch("https://openrouter.ai/api/v1/images/generations", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: "openai/dall-e-3",
-          prompt: prompt,
-          n: 1,
-          size: "512x512"
-        })
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => null);
-        console.error('Bild-API Fehler:', errorData);
-        return null;
-      }
-
-      const data = await res.json();
-      return data.data?.[0]?.url || null;
-    } catch (e) {
-      console.error('Bild-Generierung Fehler:', e);
-      return null;
-    }
-  }
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const text = input.value.trim();
-    if (!text) return;
-
-    addMessage(text, "user");
-    input.value = "";
-    input.disabled = true;
-    button.disabled = true;
-
-    if (text.toLowerCase().startsWith("!bild ")) {
-      const prompt = text.slice(6).trim();
-      addMessage("Generiere Bild...", "bot");
-      const imgUrl = await generateImage(prompt);
-      chat.lastChild.remove();
-      if (imgUrl) {
-        addMessage(`Bild zu: "${prompt}"`, "bot", imgUrl);
-      } else {
-        addMessage("Bild konnte nicht generiert werden.", "bot");
-      }
-    } else {
-      conversation.push({ role: "user", content: text });
-      addMessage("...", "bot");
-      const reply = await sendMessage(conversation);
-      chat.lastChild.remove();
-      addMessage(reply, "bot");
-      conversation.push({ role: "assistant", content: reply });
-    }
-
-    input.disabled = false;
-    button.disabled = false;
-    input.focus();
-  });
-
-  // Begrüßungsnachricht anzeigen
-  addMessage(conversation[1].content, "bot");
 </script>
 
 </body>
